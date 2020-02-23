@@ -104,33 +104,15 @@ class PixelDrawerViewV2 : View {
         val heightSize = MeasureSpec.getSize(heightMeasureSpec)
 
         val width = when (widthMode) {
-            MeasureSpec.EXACTLY -> {
-                widthSize
-            }
-            MeasureSpec.AT_MOST -> {
-                min(desiredWidth, widthSize)
-            }
-            else -> {
-                desiredWidth
-            }
+            MeasureSpec.EXACTLY -> widthSize
+            MeasureSpec.AT_MOST -> min(desiredWidth, widthSize)
+            else -> desiredWidth
         }
 
-        //Measure Height
-
-        //Measure Height
         val height = when (heightMode) {
-            MeasureSpec.EXACTLY -> {
-                //Must be this size
-                heightSize
-            }
-            MeasureSpec.AT_MOST -> {
-                //Can't be bigger than...
-                min(desiredHeight, heightSize)
-            }
-            else -> {
-                //Be whatever you want
-                desiredHeight
-            }
+            MeasureSpec.EXACTLY -> heightSize
+            MeasureSpec.AT_MOST -> min(desiredHeight, heightSize)
+            else -> desiredHeight
         }
         setMeasuredDimension(width, height)
     }
@@ -144,13 +126,18 @@ class PixelDrawerViewV2 : View {
         invalidate()
     }
 
+    private var mRow: Int = 0
+    private var mCol: Int = 0
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         when (event?.action) {
-            MotionEvent.ACTION_DOWN -> {
+            MotionEvent.ACTION_MOVE -> {
                 val column = (event.x / colSize).toInt()
                 val row = (event.y / rowSize).toInt()
-                if (row >= gridSize || column >= gridSize) return false
+                if (mCol == column && mRow == row || cells[column][row]) return true
+                mCol = column
+                mRow = row
                 cells[column][row] = !cells[column][row]
                 invalidate()
             }
@@ -162,5 +149,9 @@ class PixelDrawerViewV2 : View {
         gridSize = newSize
         calculateGridSize()
         invalidate()
+    }
+
+    companion object {
+        private const val TAG = "PixelDrawerViewV2"
     }
 }
