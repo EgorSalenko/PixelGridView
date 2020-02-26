@@ -45,5 +45,24 @@
         app:layout_constraintEnd_toStartOf="@id/decrease_grid_size_btn"
         app:layout_constraintTop_toBottomOf="@+id/pixel_drawer" />
 
+    <Switch
+        android:id="@+id/switch_color"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:checked="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/increase_grid_size_btn"
+        app:layout_constraintTop_toBottomOf="@+id/pixel_drawer"
+        android:text="Color"/>
+
+    <Switch
+        android:id="@+id/switch_mode"
+        android:layout_width="wrap_content"
+        android:checked="true"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/increase_grid_size_btn"
+        app:layout_constraintTop_toBottomOf="@+id/switch_color"
+        android:text="Mode"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

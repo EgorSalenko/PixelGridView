@@ -11,7 +11,6 @@ import android.view.MotionEvent
 import android.view.View
 import kotlin.math.min
 
-
 class PixelDrawerViewV2 : View {
 
     // default min gridSize is 2
@@ -23,22 +22,25 @@ class PixelDrawerViewV2 : View {
     private var mRowIndex: Int = 0
     private var mColumnIndex: Int = 0
 
-    private val cellPaint = Paint().apply {
-        color = Color.RED
-        isAntiAlias = true
-        style = Paint.Style.FILL
-    }
-
-    private lateinit var cells: Array<BooleanArray>
-
+    private var cellPaint = setCellColor(Color.BLACK, Paint.Style.FILL)
     private var gridPaint = setCellColor(Color.BLACK)
+    private var lastUsedPaint: Paint? = null
+
+    private val defaultColor = setDefaultWhiteColor()
+
+    private lateinit var cells: Array<Array<Paint?>>
 
     constructor(ctx: Context) : this(ctx, null)
+
     constructor(ctx: Context, attributeSet: AttributeSet?) : super(ctx, attributeSet) {
-        val attributes: TypedArray =
-            context.obtainStyledAttributes(attributeSet, R.styleable.PixelDrawerViewV2)
-        gridSize =
-            attributes.getInt(R.styleable.PixelDrawerViewV2_grid_size, gridSize)
+        val attributes: TypedArray = context.obtainStyledAttributes(
+                attributeSet,
+                R.styleable.PixelDrawerViewV2
+        )
+        gridSize = attributes.getInt(
+                R.styleable.PixelDrawerViewV2_grid_size,
+                gridSize
+        )
         attributes.recycle()
     }
 
@@ -52,59 +54,56 @@ class PixelDrawerViewV2 : View {
         if (gridSize <= 0 || gridSize > 129) throw IllegalStateException("Wrong grid size. It should be > 0 and <= 128")
         colSize = width / gridSize.toFloat()
         rowSize = width / gridSize.toFloat()
-        cells = Array(gridSize) { BooleanArray(gridSize) }
+        cells = Array(gridSize) { arrayOfNulls<Paint?>(gridSize) }
     }
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-
         val width = width.toFloat()
         for (col in 0 until gridSize) {
             for (row in 0 until gridSize) {
-                if (cells[col][row]) {
-                    canvas?.drawRect(
+                canvas?.drawRect(
                         col * colSize,
                         row * rowSize,
                         (col + 1) * colSize,
                         (row + 1) * rowSize,
-                        cellPaint
-                    )
-                }
+                        cells[col][row] ?: defaultColor
+                )
             }
         }
 
         // draw grid columns
         for (i in 0 until gridSize) {
             canvas?.drawLine(
-                i * colSize, 0f,
-                i * colSize, width,
-                gridPaint
+                    i * colSize,
+                    0f,
+                    i * colSize,
+                    width,
+                    gridPaint
             )
         }
 
         // draw grid rows
         for (i in 0..gridSize) {
             canvas?.drawLine(
-                0f, i * rowSize,
-                width, i * rowSize,
-                gridPaint
+                    0f,
+                    i * rowSize,
+                    width,
+                    i * rowSize,
+                    gridPaint
             )
         }
-
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-
         val desiredWidth = width
         val widthMode = MeasureSpec.getMode(widthMeasureSpec)
         val widthSize = MeasureSpec.getSize(widthMeasureSpec)
-
         val width = when (widthMode) {
             MeasureSpec.EXACTLY -> widthSize
             MeasureSpec.AT_MOST -> min(desiredWidth, widthSize)
             else -> desiredWidth
         }
-
         setMeasuredDimension(width, width)
     }
 
@@ -114,13 +113,12 @@ class PixelDrawerViewV2 : View {
             MotionEvent.ACTION_MOVE, MotionEvent.ACTION_DOWN -> {
                 val column = (event.x / colSize).toInt()
                 val row = (event.y / rowSize).toInt()
-                if (inBounds(column, row)
-                    || isLastCellCoordinates(column, row)
-                    || isCellSelected(column, row)
-                ) return true
+
+                if (inBounds(column, row) || isLastCellCoordinates(column, row)) return true
+
                 mColumnIndex = column
                 mRowIndex = row
-                cells[column][row] = !cells[column][row]
+                cells[column][row] = cellPaint
                 invalidate()
             }
         }
@@ -128,15 +126,15 @@ class PixelDrawerViewV2 : View {
     }
 
     fun clear() {
-        for (col in 0 until gridSize) {
-            for (row in 0 until gridSize) {
-                cells[col][row] = false
+        for (col in cells.indices) {
+            for (row in cells.indices) {
+                cells[col][row] = defaultColor
             }
         }
         invalidate()
     }
 
-    fun changeGridSize(newSize : Int) {
+    fun changeGridSize(newSize: Int) {
         if (newSize < 1) return
         gridSize = newSize
         calculateGridSize()
@@ -144,24 +142,43 @@ class PixelDrawerViewV2 : View {
     }
 
     fun changeColor(color: Int) {
-        gridPaint = setCellColor(newColor = color)
+        cellPaint = setCellColor(newColor = color, newStyle = Paint.Style.FILL)
     }
 
-    private fun setCellColor(newColor: Int) = Paint().apply {
+    fun setMode(mode: MODE) {
+        when (mode) {
+            MODE.PAINT -> {
+                cellPaint = lastUsedPaint ?: defaultColor
+            }
+            MODE.ERASE -> {
+                lastUsedPaint = cellPaint
+                cellPaint = defaultColor
+            }
+        }
+    }
+
+    private fun setDefaultWhiteColor(): Paint = setCellColor(Color.WHITE, Paint.Style.FILL)
+
+    private fun setCellColor(newColor: Int, newStyle: Paint.Style = Paint.Style.STROKE) = Paint().apply {
         color = newColor
         isAntiAlias = true
-        style = Paint.Style.STROKE
+        style = newStyle
     }
 
-    private fun inBounds(column: Int, row: Int): Boolean =
-        column < 0 || row < 0 || column >= gridSize || row >= gridSize
+    private fun inBounds(column: Int, row: Int): Boolean = column < 0
+            || row < 0
+            || column >= gridSize
+            || row >= gridSize
 
-    private fun isLastCellCoordinates(column: Int, row: Int): Boolean =
-        mColumnIndex == column && mRowIndex == row
-
-    private fun isCellSelected(column: Int, row: Int): Boolean = cells[column][row]
+    private fun isLastCellCoordinates(column: Int, row: Int): Boolean = mColumnIndex == column
+            && mRowIndex == row
 
     companion object {
         private const val TAG = "PixelDrawerViewV2"
+    }
+
+    enum class MODE {
+        PAINT,
+        ERASE
     }
 }
