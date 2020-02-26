@@ -13,20 +13,22 @@ import kotlin.math.min
 
 class PixelDrawerViewV2 : View {
 
-    // default min gridSize is 2
-    var gridSize: Int = 2
+
+    companion object {
+        private const val TAG = "PixelDrawerViewV2"
+        // default min gridSize is 2
+        private const val MIN_GRID_SIZE = 2
+    }
+
+    var gridSize: Int = MIN_GRID_SIZE
 
     private var colSize: Float = 0f
     private var rowSize: Float = 0f
 
-    private var mRowIndex: Int = 0
-    private var mColumnIndex: Int = 0
-
     private var cellPaint = setCellColor(Color.BLACK, Paint.Style.FILL)
     private var gridPaint = setCellColor(Color.BLACK)
     private var lastUsedPaint: Paint? = null
-
-    private val defaultColor = setDefaultWhiteColor()
+    private val defaultColor: Paint = setDefaultWhiteColor()
 
     private lateinit var cells: Array<Array<Paint?>>
 
@@ -114,10 +116,7 @@ class PixelDrawerViewV2 : View {
                 val column = (event.x / colSize).toInt()
                 val row = (event.y / rowSize).toInt()
 
-                if (inBounds(column, row) || isLastCellCoordinates(column, row)) return true
-
-                mColumnIndex = column
-                mRowIndex = row
+                if (inBounds(column, row)) return true
                 cells[column][row] = cellPaint
                 invalidate()
             }
@@ -170,12 +169,6 @@ class PixelDrawerViewV2 : View {
             || column >= gridSize
             || row >= gridSize
 
-    private fun isLastCellCoordinates(column: Int, row: Int): Boolean = mColumnIndex == column
-            && mRowIndex == row
-
-    companion object {
-        private const val TAG = "PixelDrawerViewV2"
-    }
 
     enum class MODE {
         PAINT,
