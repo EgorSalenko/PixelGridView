@@ -13,11 +13,10 @@ import kotlin.math.min
 
 class PixelDrawerViewV2 : View {
 
-
     companion object {
         private const val TAG = "PixelDrawerViewV2"
-        // default min gridSize is 2
         private const val MIN_GRID_SIZE = 2
+        private const val MAX_GRID_SIZE = 64
     }
 
     var gridSize: Int = MIN_GRID_SIZE
@@ -53,7 +52,7 @@ class PixelDrawerViewV2 : View {
     }
 
     private fun calculateGridSize() {
-        if (gridSize <= 0 || gridSize > 129) throw IllegalStateException("Wrong grid size. It should be > 0 and <= 128")
+        if (gridSize <= 0 || gridSize > MAX_GRID_SIZE) throw IllegalStateException("Wrong grid size. It should be > 0 and <= 128")
         colSize = width / gridSize.toFloat()
         rowSize = width / gridSize.toFloat()
         cells = Array(gridSize) { arrayOfNulls<Paint?>(gridSize) }
@@ -97,6 +96,22 @@ class PixelDrawerViewV2 : View {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: MotionEvent?): Boolean {
+        when (event?.action) {
+            MotionEvent.ACTION_MOVE, MotionEvent.ACTION_DOWN -> {
+                val column = (event.x / colSize).toInt()
+                val row = (event.y / rowSize).toInt()
+
+                if (inBounds(column, row)) return true
+                cells[column][row] = cellPaint
+                invalidate()
+                return true
+            }
+        }
+        return super.onTouchEvent(event)
+    }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val desiredWidth = width
         val widthMode = MeasureSpec.getMode(widthMeasureSpec)
@@ -109,21 +124,6 @@ class PixelDrawerViewV2 : View {
         setMeasuredDimension(width, width)
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        when (event?.action) {
-            MotionEvent.ACTION_MOVE, MotionEvent.ACTION_DOWN -> {
-                val column = (event.x / colSize).toInt()
-                val row = (event.y / rowSize).toInt()
-
-                if (inBounds(column, row)) return true
-                cells[column][row] = cellPaint
-                invalidate()
-            }
-        }
-        return true
-    }
-
     fun clear() {
         for (col in cells.indices) {
             for (row in cells.indices) {
@@ -134,7 +134,7 @@ class PixelDrawerViewV2 : View {
     }
 
     fun changeGridSize(newSize: Int) {
-        if (newSize < 1) return
+        if (newSize < 1 || newSize > MAX_GRID_SIZE) return
         gridSize = newSize
         calculateGridSize()
         invalidate()
@@ -168,7 +168,6 @@ class PixelDrawerViewV2 : View {
             || row < 0
             || column >= gridSize
             || row >= gridSize
-
 
     enum class MODE {
         PAINT,
