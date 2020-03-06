@@ -61,37 +61,36 @@ class PixelDrawerViewV2 : View {
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
         val width = width.toFloat()
-        for (col in 0 until gridSize) {
-            for (row in 0 until gridSize) {
-                canvas?.drawRect(
-                        col * colSize,
-                        row * rowSize,
-                        (col + 1) * colSize,
-                        (row + 1) * rowSize,
-                        cells[col][row] ?: defaultColor
-                )
-            }
+
+        createTwoDimensArray(gridSize) { col, row ->
+            canvas?.drawRect(
+                col * colSize,
+                row * rowSize,
+                (col + 1) * colSize,
+                (row + 1) * rowSize,
+                cells[col][row] ?: defaultColor
+            )
         }
 
         // draw grid columns
-        for (i in 0 until gridSize) {
+        repeatInclusive(gridSize) {i ->
             canvas?.drawLine(
-                    i * colSize,
-                    0f,
-                    i * colSize,
-                    width,
-                    gridPaint
+                i * colSize,
+                0f,
+                i * colSize,
+                width,
+                gridPaint
             )
         }
 
         // draw grid rows
-        for (i in 0..gridSize) {
+        repeatInclusive(gridSize) { i ->
             canvas?.drawLine(
-                    0f,
-                    i * rowSize,
-                    width,
-                    i * rowSize,
-                    gridPaint
+                0f,
+                i * rowSize,
+                width,
+                i * rowSize,
+                gridPaint
             )
         }
     }
@@ -125,11 +124,7 @@ class PixelDrawerViewV2 : View {
     }
 
     fun clear() {
-        for (col in cells.indices) {
-            for (row in cells.indices) {
-                cells[col][row] = defaultColor
-            }
-        }
+        cells.mapTwoDimensArray(::defaultColor)
         invalidate()
     }
 
@@ -173,4 +168,5 @@ class PixelDrawerViewV2 : View {
         PAINT,
         ERASE
     }
+
 }
