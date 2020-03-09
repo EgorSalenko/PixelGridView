@@ -62,7 +62,7 @@ class PixelDrawerViewV2 : View {
         super.onDraw(canvas)
         val width = width.toFloat()
 
-        createTwoDimensArray(gridSize) { col, row ->
+        createTwoDimensArray(gridSize, gridSize) { col, row ->
             canvas?.drawRect(
                 col * colSize,
                 row * rowSize,
@@ -95,20 +95,49 @@ class PixelDrawerViewV2 : View {
         }
     }
 
+    private var dx = 0f
+    private var dy = 0f
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         when (event?.action) {
             MotionEvent.ACTION_MOVE, MotionEvent.ACTION_DOWN -> {
-                val column = (event.x / colSize).toInt()
-                val row = (event.y / rowSize).toInt()
+                if (event.action == MotionEvent.ACTION_DOWN) {
+                    dx = event.x
+                    dy = event.y
+                    drawCell(dx, dy)
+                    invalidate()
+                }
 
-                if (inBounds(column, row)) return true
-                cells[column][row] = cellPaint
+                val midX = lerp(dx, event.x, .5f)
+                val midY = lerp(dy, event.y, .5f)
+
+                interpolate(dx, dy, midX, midY)
+                interpolate(midX, midY, event.x, event.y)
+
+                dx = event.x
+                dy = event.y
+
                 invalidate()
                 return true
             }
         }
         return super.onTouchEvent(event)
+    }
+
+    private fun interpolate(x: Float, y: Float, mx: Float, my: Float) {
+        val midX = lerp(x, mx, .25f)
+        val midY = lerp(y, my, .25f)
+
+        drawCell(midX, midY)
+    }
+
+    private fun drawCell(x: Float, y: Float) {
+        val column = (x / colSize).toInt()
+        val row = (y / rowSize).toInt()
+
+        if (inBounds(column, row)) return
+        cells[column][row] = cellPaint
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -125,6 +154,8 @@ class PixelDrawerViewV2 : View {
 
     fun clear() {
         cells.mapTwoDimensArray(::defaultColor)
+        dx = 0f
+        dy = 0f
         invalidate()
     }
 
@@ -168,5 +199,7 @@ class PixelDrawerViewV2 : View {
         PAINT,
         ERASE
     }
+
+    private fun lerp(x: Float, y: Float, dist: Float): Float = x + dist * (y - x)
 
 }
