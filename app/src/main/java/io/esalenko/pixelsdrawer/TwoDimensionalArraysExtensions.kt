@@ -3,11 +3,12 @@ package io.esalenko.pixelsdrawer
 
 fun createTwoDimensArray(
     N: Int,
+    M: Int,
     col: (Int, Int) -> Unit
 ) {
 
     repeat(N) {_col ->
-        repeat(N) {_row ->
+        repeat(M) {_row ->
             col.invoke(_col, _row)
         }
     }
