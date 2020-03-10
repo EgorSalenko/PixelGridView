@@ -127,8 +127,9 @@ class PixelDrawerViewV2 : View {
     private fun drawCell(x: Float, y: Float) {
         val column = (x / colSize).toInt()
         val row = (y / rowSize).toInt()
-        if (checkBounds(column, row)) return
-        cells[column][row] = cellPaint
+        checkBounds(column, row) { _col, _row ->
+            cells[_col][_row] = cellPaint
+        }
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -181,8 +182,12 @@ class PixelDrawerViewV2 : View {
             style = newStyle
         }
 
-    private fun checkBounds(column: Int, row: Int): Boolean =
-        column < 0 || row < 0 || column >= gridSize || row >= gridSize
+    private fun checkBounds(column: Int, row: Int, result : (Int, Int) -> Unit) {
+        val notInBounds = column < 0 || row < 0 || column >= gridSize || row >= gridSize
+        if (!notInBounds) {
+            result.invoke(column, row)
+        }
+    }
 
     enum class MODE {
         PAINT, ERASE
