@@ -32,15 +32,12 @@ class PixelDrawerViewV2 : View {
     private lateinit var cells: Array<Array<Paint?>>
 
     constructor(ctx: Context) : this(ctx, null)
-
     constructor(ctx: Context, attributeSet: AttributeSet?) : super(ctx, attributeSet) {
         val attributes: TypedArray = context.obtainStyledAttributes(
-                attributeSet,
-                R.styleable.PixelDrawerViewV2
+            attributeSet, R.styleable.PixelDrawerViewV2
         )
         gridSize = attributes.getInt(
-                R.styleable.PixelDrawerViewV2_grid_size,
-                gridSize
+            R.styleable.PixelDrawerViewV2_grid_size, gridSize
         )
         attributes.recycle()
     }
@@ -73,24 +70,16 @@ class PixelDrawerViewV2 : View {
         }
 
         // draw grid columns
-        repeatInclusive(gridSize) {i ->
+        repeatInclusive(gridSize) { i ->
             canvas?.drawLine(
-                i * colSize,
-                0f,
-                i * colSize,
-                width,
-                gridPaint
+                i * colSize, 0f, i * colSize, width, gridPaint
             )
         }
 
         // draw grid rows
         repeatInclusive(gridSize) { i ->
             canvas?.drawLine(
-                0f,
-                i * rowSize,
-                width,
-                i * rowSize,
-                gridPaint
+                0f, i * rowSize, width, i * rowSize, gridPaint
             )
         }
     }
@@ -102,22 +91,8 @@ class PixelDrawerViewV2 : View {
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         when (event?.action) {
             MotionEvent.ACTION_MOVE, MotionEvent.ACTION_DOWN -> {
-                if (event.action == MotionEvent.ACTION_DOWN) {
-                    dx = event.x
-                    dy = event.y
-                    drawCell(dx, dy)
-                    invalidate()
-                }
-
-                val midX = lerp(dx, event.x, .5f)
-                val midY = lerp(dy, event.y, .5f)
-
-                interpolate(dx, dy, midX, midY)
-                interpolate(midX, midY, event.x, event.y)
-
-                dx = event.x
-                dy = event.y
-
+                processTapDrawing(event)
+                processDrawingWithInterpolation(event.x, event.y)
                 invalidate()
                 return true
             }
@@ -125,18 +100,34 @@ class PixelDrawerViewV2 : View {
         return super.onTouchEvent(event)
     }
 
-    private fun interpolate(x: Float, y: Float, mx: Float, my: Float) {
-        val midX = lerp(x, mx, .25f)
-        val midY = lerp(y, my, .25f)
+    private fun processTapDrawing(event: MotionEvent) {
+        if (event.action == MotionEvent.ACTION_DOWN) {
+            dx = event.x
+            dy = event.y
+            drawCell(dx, dy)
+            invalidate()
+        }
+    }
 
+    private fun processDrawingWithInterpolation(x: Float, y: Float) {
+        val midX = lerp(dx, x, .5f)
+        val midY = lerp(dy, y, .5f)
+        interpolate(dx, dy, midX, midY)
+        interpolate(midX, midY, x, y)
+        dx = x
+        dy = y
+    }
+
+    private fun interpolate(x: Float, y: Float, mx: Float, my: Float) {
+        val midX = lerp(x, mx, .5f)
+        val midY = lerp(y, my, .5f)
         drawCell(midX, midY)
     }
 
     private fun drawCell(x: Float, y: Float) {
         val column = (x / colSize).toInt()
         val row = (y / rowSize).toInt()
-
-        if (inBounds(column, row)) return
+        if (checkBounds(column, row)) return
         cells[column][row] = cellPaint
     }
 
@@ -147,7 +138,7 @@ class PixelDrawerViewV2 : View {
         val width = when (widthMode) {
             MeasureSpec.EXACTLY -> widthSize
             MeasureSpec.AT_MOST -> min(desiredWidth, widthSize)
-            else -> desiredWidth
+            else                -> desiredWidth
         }
         setMeasuredDimension(width, width)
     }
@@ -183,23 +174,19 @@ class PixelDrawerViewV2 : View {
     }
 
     private fun setDefaultWhiteColor(): Paint = setCellColor(Color.WHITE, Paint.Style.FILL)
+    private fun setCellColor(newColor: Int, newStyle: Paint.Style = Paint.Style.STROKE) =
+        Paint().apply {
+            color = newColor
+            isAntiAlias = true
+            style = newStyle
+        }
 
-    private fun setCellColor(newColor: Int, newStyle: Paint.Style = Paint.Style.STROKE) = Paint().apply {
-        color = newColor
-        isAntiAlias = true
-        style = newStyle
-    }
-
-    private fun inBounds(column: Int, row: Int): Boolean = column < 0
-            || row < 0
-            || column >= gridSize
-            || row >= gridSize
+    private fun checkBounds(column: Int, row: Int): Boolean =
+        column < 0 || row < 0 || column >= gridSize || row >= gridSize
 
     enum class MODE {
-        PAINT,
-        ERASE
+        PAINT, ERASE
     }
 
     private fun lerp(x: Float, y: Float, dist: Float): Float = x + dist * (y - x)
-
 }
