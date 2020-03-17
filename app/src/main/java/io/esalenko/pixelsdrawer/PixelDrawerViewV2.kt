@@ -91,8 +91,8 @@ class PixelDrawerViewV2 : View {
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         when (event?.action) {
             MotionEvent.ACTION_MOVE, MotionEvent.ACTION_DOWN -> {
-                processTapDrawing(event)
-                processDrawingWithInterpolation(event.x, event.y)
+                drawOnTap(event)
+                drawWithInterpolation(event.x, event.y)
                 invalidate()
                 return true
             }
@@ -100,7 +100,7 @@ class PixelDrawerViewV2 : View {
         return super.onTouchEvent(event)
     }
 
-    private fun processTapDrawing(event: MotionEvent) {
+    private fun drawOnTap(event: MotionEvent) {
         if (event.action == MotionEvent.ACTION_DOWN) {
             dx = event.x
             dy = event.y
@@ -109,7 +109,7 @@ class PixelDrawerViewV2 : View {
         }
     }
 
-    private fun processDrawingWithInterpolation(x: Float, y: Float) {
+    private fun drawWithInterpolation(x: Float, y: Float) {
         val midX = lerp(dx, x, .5f)
         val midY = lerp(dy, y, .5f)
         interpolate(dx, dy, midX, midY)
@@ -182,7 +182,7 @@ class PixelDrawerViewV2 : View {
             style = newStyle
         }
 
-    private fun checkBounds(column: Int, row: Int, result : (Int, Int) -> Unit) {
+    private fun checkBounds(column: Int, row: Int, result: (Int, Int) -> Unit) {
         val notInBounds = column < 0 || row < 0 || column >= gridSize || row >= gridSize
         if (!notInBounds) {
             result.invoke(column, row)
