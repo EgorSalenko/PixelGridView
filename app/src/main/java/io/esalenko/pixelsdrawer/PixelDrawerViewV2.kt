@@ -8,7 +8,10 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.MotionEvent
+import android.view.ScaleGestureDetector
 import android.view.View
+import androidx.core.view.ViewCompat
+import kotlin.math.max
 import kotlin.math.min
 
 class PixelDrawerViewV2 : View {
@@ -30,6 +33,10 @@ class PixelDrawerViewV2 : View {
     private val defaultColor: Paint = setDefaultWhiteColor()
 
     private lateinit var cells: Array<Array<Paint?>>
+
+    private var scaleFactor = 1f
+
+    private val scaleGestureDetector = ScaleGestureDetector(context, OnScaleGesture())
 
     constructor(ctx: Context) : this(ctx, null)
     constructor(ctx: Context, attributeSet: AttributeSet?) : super(ctx, attributeSet) {
@@ -57,6 +64,17 @@ class PixelDrawerViewV2 : View {
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
+        canvas?.apply {
+            save()
+            scale(scaleFactor, scaleFactor)
+            onDrawProcessing()
+            restore()
+        }
+
+    }
+
+    private fun Canvas?.onDrawProcessing() {
+        val canvas = this
         val width = width.toFloat()
 
         createTwoDimensArray(gridSize, gridSize) { col, row ->
@@ -89,6 +107,7 @@ class PixelDrawerViewV2 : View {
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent?): Boolean {
+        scaleGestureDetector.onTouchEvent(event)
         when (event?.action) {
             MotionEvent.ACTION_MOVE, MotionEvent.ACTION_DOWN -> {
                 drawOnTap(event)
@@ -183,8 +202,8 @@ class PixelDrawerViewV2 : View {
         }
 
     private fun checkBounds(column: Int, row: Int, result: (Int, Int) -> Unit) {
-        val notInBounds = column < 0 || row < 0 || column >= gridSize || row >= gridSize
-        if (!notInBounds) {
+        val inBounds = column > 0 || row > 0 || column <= gridSize || row <= gridSize
+        if (inBounds) {
             result.invoke(column, row)
         }
     }
@@ -194,4 +213,14 @@ class PixelDrawerViewV2 : View {
     }
 
     private fun lerp(x: Float, y: Float, dist: Float): Float = x + dist * (y - x)
+
+    private inner class OnScaleGesture : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+        override fun onScale(detector: ScaleGestureDetector?): Boolean {
+            scaleFactor *= scaleGestureDetector.scaleFactor
+            scaleFactor = max(1f, min(scaleFactor, 10.0f))
+            ViewCompat.postInvalidateOnAnimation(this@PixelDrawerViewV2)
+            return true
+        }
+
+    }
 }
